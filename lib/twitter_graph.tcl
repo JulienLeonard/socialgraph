@@ -78,10 +78,48 @@ proc twitter_nfavs_timeline {} {
     return [lsort -integer -index 0 -increasing $result]
 }
 
+#
+# from the most recent file, create the timeline of posts and nfavs
+#
+proc twitter_post_nfavs_timelines {} {
+    set result [list]
+    set filepath [lback [sort_filepaths_by_date [twitter_stat_filepaths]]]
+
+    set xmlroot [freadxml $filepath]
+    if {[string length $xmlroot]} {
+	foreach postnode [$xmlroot selectNodes //twitter/post] {
+	    instxmlattributes $postnode {name timestamp fav_count rt_count}
+	    set text [xmltext $postnode]
+	    set count [+ $fav_count $rt_count]
+	    lappend result [list [clock scan $timestamp] [expr {$count}] $count $text]
+	    puts "post $name timestamp $timestamp [clock scan $timestamp] count [expr {sqrt($count)}]"
+	}
+    }
+    
+    set result [lsort -integer -index 0 -increasing $result]
+
+    # create histograms
+    set histograms [list]
+    foreach item $result {
+	foreach {t v count text} $item break
+	if {![string match RT* $text]} {
+	    set histogram [list]
+	    lappend histogram [list [- $t 10] 0]
+	    lappend histogram [list [- $t 10] $v]
+	    lappend histogram [list [+ $t 10] $v]
+	    lappend histogram [list [+ $t 10] 0]
+	    lappend histograms [list $histogram green [xmlformat "$count $text"]]
+	}
+    }
+    return $histograms
+}
 
 
-proc twitter_graph_datalines {{filepath "twitter_datalines.svg"}} {
-    gen_graph_datalines [list [list [twitter_nfollowers_timeline] orange nfollowers] [list [twitter_nfavs_timeline] yellow nfavs]] $filepath yes   
+
+proc twitter_graph_datalines {{dirpath ""}} {
+    gen_graph_datalines [list [list [twitter_nfollowers_timeline] orange nfollowers]] $dirpath/twitter_nfollowers.svg yes   
+    gen_graph_datalines [list [list [twitter_nfavs_timeline]      yellow nfavs]] $dirpath/twitter_nfavs.svg           yes
+    gen_graph_datalines [twitter_post_nfavs_timelines] $dirpath/twitter_post_nfavs.svg      yes
 }
 
 proc twitter_new_stats {} {
@@ -92,9 +130,9 @@ proc twitter_new_stats {} {
 
 }
 
-proc twitter_refresh_timelines {{filepath "twitter_datalines.svg"}} {
+proc twitter_refresh_timelines {{dirpath ""}} {
     twitter_new_stats
-    twitter_graph_datalines $filepath
+    twitter_graph_datalines $dirpath
 }
 
 proc test_twitter_stat_filepaths {} {

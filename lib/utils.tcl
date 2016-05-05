@@ -827,14 +827,13 @@ proc fget {pattern} {
     return [glob -directory "./" $pattern]
 }
 
-proc get_files_by_date {{pattern *} {directory ""}} {
-    if {![string length $directory]} {
-	set directory "./"
-    }
-    
-    foreach file [glob -directory $directory $pattern] {
+
+proc sort_filepaths_by_date {filepaths} {
+    set filelist [list]
+    foreach file $filepaths {
 	lappend filelist [list $file [file mtime $file]]
     }
+    
     set filelist [lsort -integer -index 1 $filelist]
     
     set result [list]
@@ -843,6 +842,14 @@ proc get_files_by_date {{pattern *} {directory ""}} {
     }
 
     return $result
+}
+
+proc get_files_by_date {{pattern *} {directory ""}} {
+    if {![string length $directory]} {
+	set directory "./"
+    }
+    
+    return [sort_filepaths_by_date [glob -directory $directory $pattern]]
 }
     
     
