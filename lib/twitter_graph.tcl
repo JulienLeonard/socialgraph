@@ -92,7 +92,7 @@ proc twitter_post_nfavs_timelines {} {
 	    set text [xmltext $postnode]
 	    set count [+ $fav_count $rt_count]
 	    lappend result [list [clock scan $timestamp] [expr {$count}] $count $text]
-	    puts "post $name timestamp $timestamp [clock scan $timestamp] count [expr {sqrt($count)}]"
+	    puts "post $name timestamp $timestamp [clock scan $timestamp] count $count text $text"
 	}
     }
     
