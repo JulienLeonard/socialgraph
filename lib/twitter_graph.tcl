@@ -84,13 +84,17 @@ proc twitter_nfavs_timeline {} {
 proc twitter_post_nfavs_timelines {} {
     set result [list]
     set filepath [lback [sort_filepaths_by_date [twitter_stat_filepaths]]]
-
+    set maxfavcount 0
+    
     set xmlroot [freadxml $filepath]
     if {[string length $xmlroot]} {
 	foreach postnode [$xmlroot selectNodes //twitter/post] {
 	    instxmlattributes $postnode {name timestamp fav_count rt_count}
 	    set text [xmltext $postnode]
 	    set count [+ $fav_count $rt_count]
+	    if {$count > $maxfavcount} {
+		set maxfavcount 100
+	    }
 	    lappend result [list [clock scan $timestamp] [expr {$count}] $count $text]
 	    puts "post $name timestamp $timestamp [clock scan $timestamp] count $count text $text"
 	}
@@ -100,6 +104,19 @@ proc twitter_post_nfavs_timelines {} {
 
     # create histograms
     set histograms [list]
+    # foreach item $result {
+    # 	foreach {t v count text} $item break
+    # 	if {![string match RT* $text]} {
+    # 	    set histogram2 [list]
+    # 	    lappend histogram2 [list [- $t 10] 0]
+    # 	    lappend histogram2 [list [- $t 10] $maxfavcount ]
+    # 	    lappend histogram2 [list [+ $t 10] $maxfavcount ]
+    # 	    lappend histogram2 [list [+ $t 10] 0]
+	    
+    # 	    lappend histograms [list $histogram2 black [xmlformat "$text"]]
+    # 	}
+    # }
+
     foreach item $result {
 	foreach {t v count text} $item break
 	if {![string match RT* $text]} {
@@ -108,9 +125,11 @@ proc twitter_post_nfavs_timelines {} {
 	    lappend histogram [list [- $t 10] $v]
 	    lappend histogram [list [+ $t 10] $v]
 	    lappend histogram [list [+ $t 10] 0]
+	    
 	    lappend histograms [list $histogram green [xmlformat "$count $text"]]
 	}
     }
+
     return $histograms
 }
 
